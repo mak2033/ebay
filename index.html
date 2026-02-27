@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>eBay Profit Pro - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec6d",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102218",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b5445;
+            border-radius: 10px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .roi-warning {
+            animation: pulse 2s infinite;
+        }
+
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .lang-switch-btn {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .lang-switch-btn.active {
+            background: #13ec6d;
+            color: #102218;
+        }
+
+        html[dir="rtl"] .material-symbols-outlined {
+            transform: scaleX(-1);
+        }
+
+        html[dir="rtl"] .no-flip {
+            transform: none !important;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(19, 236, 109, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(19, 236, 109, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(19, 236, 109, 0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside
+            class="w-64 flex-shrink-0 border-r border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 flex flex-col">
+            <div class="p-6 flex items-center gap-3">
+                <div class="size-8 bg-primary rounded-lg flex items-center justify-center text-background-dark">
+                    <span class="material-symbols-outlined font-bold">payments</span>
+                </div>
+                <h1 data-i18n="profitPro" class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Profit
+                    Pro</h1>
+            </div>
+            <nav class="flex-1 px-4 space-y-2 mt-4">
+                <button onclick="switchTab('calculator')" id="nav-calculator"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all">
+                    <span class="material-symbols-outlined">calculate</span>
+                    <span data-i18n="calculator" class="font-medium">Calculator</span>
+                </button>
+                <button onclick="switchTab('shipping')" id="nav-shipping"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/5 transition-all">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    <span data-i18n="shippingRates" class="font-medium">Shipping Rates</span>
+                </button>
+                <button onclick="switchTab('saved')" id="nav-saved"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/5 transition-all">
+                    <span class="material-symbols-outlined">history</span>
+                    <span data-i18n="savedProducts" class="font-medium">Saved Products</span>
+                </button>
+            </nav>
+            <div class="p-4 mt-auto">
+                <div
+                    class="bg-slate-100 dark:bg-primary/10 rounded-xl p-4 border border-slate-200 dark:border-primary/10">
+                    <p data-i18n="exchangeRate"
+                        class="text-xs font-semibold text-slate-500 dark:text-primary/70 uppercase tracking-wider">
+                        Exchange Rate</p>
+                    <p class="text-lg font-bold mt-1 text-slate-900 dark:text-white">$1 USD = 0.71 JOD</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header
+                class="h-16 border-b border-slate-200 dark:border-primary/10 bg-white/50 dark:bg-background-dark/50 backdrop-blur-md flex items-center justify-between px-8">
+                <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    <span data-i18n="dashboard" class="text-sm">Dashboard</span>
+                    <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    <span id="breadcrumb" data-i18n="profitCalculator"
+                        class="text-sm font-semibold text-slate-900 dark:text-white">Profit
+                        Calculator</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex bg-slate-100 dark:bg-background-dark p-1 rounded-lg">
+                        <button onclick="setLanguage('en')" id="lang-en"
+                            class="lang-switch-btn active uppercase">EN</button>
+                        <button onclick="setLanguage('ar')" id="lang-ar"
+                            class="lang-switch-btn text-slate-500 uppercase">AR</button>
+                    </div>
+                    <div class="h-8 w-px bg-slate-200 dark:bg-primary/10"></div>
+                    <button onclick="toggleTheme()"
+                        class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10 text-slate-600 dark:text-slate-400 transition-colors">
+                        <span class="material-symbols-outlined">dark_mode</span>
+                    </button>
+                    <div class="h-8 w-px bg-slate-200 dark:bg-primary/10"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-900 dark:text-white">Admin User</p>
+                            <p class="text-xs text-slate-500">Pro Plan</p>
+                        </div>
+                        <div
+                            class="size-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center overflow-hidden">
+                            <img alt="Profile" class="size-full object-cover"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyxzAZ5ZgJYVqs2IzNloYU3sIvMhpUTzKAZpbrlIfjam2u1R6CnEjkbY6M34MXTbb24pPEKEXc7PybfMfgmZvWbbx45o99MyIAE5QXJZj04CxvJ1YfVsw6_x1r-yobvwMwUbtS92GZWJOs1T2t-W4MSB2-Sze2hOE_4A9ww6DODQqdQOEbit8fu7MplCTJ9xTlNvP3J6v8U54eN5qyStjmrQRrIIbNS1s1ZUiUnOjADYKWjkBYwq43JwY1CDSKHaGa2YGkJfybbtFN" />
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-8">
+                <div class="max-w-6xl mx-auto">
+
+                    <!-- Calculator Tab -->
+                    <div id="tab-calculator" class="tab-content active">
+                        <div class="mb-8">
+                            <h2 data-i18n="mainDashboard"
+                                class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Main
+                                Dashboard</h2>
+                            <p data-i18n="subTitle" class="text-slate-500 dark:text-slate-400 mt-1">Professional eBay
+                                margin and ROI analysis
+                                tool.</p>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <!-- Left Column: Inputs -->
+                            <div class="lg:col-span-7 space-y-6">
+                                <div
+                                    class="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-primary/10 shadow-sm">
+                                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary">edit_note</span>
+                                        <span data-i18n="productDetails">Product Details</span>
+                                    </h3>
+                                    <div class="space-y-5">
+                                        <div>
+                                            <label data-i18n="productName"
+                                                class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Product
+                                                Name</label>
+                                            <input id="productName"
+                                                class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl px-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white placeholder:text-slate-400 transition-all"
+                                                placeholder="e.g. Wireless Noise Cancelling Headphones" type="text" />
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <label data-i18n="itemCost"
+                                                        class="text-sm font-medium text-slate-600 dark:text-slate-400">Item
+                                                        Cost</label>
+                                                    <div
+                                                        class="flex bg-slate-100 dark:bg-background-dark p-1 rounded-lg text-[10px] font-bold">
+                                                        <button id="cost-USD" onclick="setCurrency('cost', 'USD')"
+                                                            class="px-2 py-0.5 rounded-md bg-white dark:bg-primary text-slate-900 dark:text-background-dark transition-all">USD</button>
+                                                        <button id="cost-JOD" onclick="setCurrency('cost', 'JOD')"
+                                                            class="px-2 py-0.5 rounded-md text-slate-500 transition-all">JOD</button>
+                                                    </div>
+                                                </div>
+                                                <div class="relative">
+                                                    <span id="cost-symbol"
+                                                        class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                                    <input id="itemCost" oninput="calculate()"
+                                                        class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl pl-8 pr-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white transition-all"
+                                                        placeholder="0.00" type="number" step="0.01" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label data-i18n="sellingPriceUSD"
+                                                    class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Selling
+                                                    Price (USD)</label>
+                                                <div class="relative">
+                                                    <span
+                                                        class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                                    <input id="sellingPrice" oninput="calculate()"
+                                                        class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl pl-8 pr-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white transition-all"
+                                                        placeholder="0.00" type="number" step="0.01" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <label data-i18n="itemWeight"
+                                                        class="text-sm font-medium text-slate-600 dark:text-slate-400">Item
+                                                        Weight</label>
+                                                    <div
+                                                        class="flex bg-slate-100 dark:bg-background-dark p-1 rounded-lg text-[10px] font-bold">
+                                                        <button id="weight-G" onclick="setUnit('weight', 'G')"
+                                                            class="px-2 py-0.5 rounded-md bg-white dark:bg-primary text-slate-900 dark:text-background-dark transition-all">G</button>
+                                                        <button id="weight-KG" onclick="setUnit('weight', 'KG')"
+                                                            class="px-2 py-0.5 rounded-md text-slate-500 transition-all">KG</button>
+                                                    </div>
+                                                </div>
+                                                <input id="itemWeight" oninput="calculate()"
+                                                    class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl px-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white transition-all"
+                                                    placeholder="Weight" type="number" />
+                                            </div>
+                                            <div>
+                                                <label data-i18n="quantity"
+                                                    class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Quantity</label>
+                                                <input id="quantity" oninput="calculate()"
+                                                    class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl px-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white transition-all"
+                                                    type="number" value="1" min="1" />
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label data-i18n="ebayFeeFixed"
+                                                    class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">eBay
+                                                    Fee (Fixed %)</label>
+                                                <input readonly disabled
+                                                    class="w-full bg-slate-100 dark:bg-background-dark/30 border border-slate-200 dark:border-primary/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed"
+                                                    type="text" value="20%" />
+                                            </div>
+                                            <div>
+                                                <label data-i18n="adFeePct"
+                                                    class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Ad
+                                                    Fee %</label>
+                                                <div class="relative">
+                                                    <input id="adFeePct" oninput="calculate()"
+                                                        class="w-full bg-slate-50 dark:bg-background-dark/50 border border-slate-200 dark:border-primary/20 rounded-xl px-4 py-3 focus:ring-primary focus:border-primary text-slate-900 dark:text-white transition-all"
+                                                        placeholder="0" type="number" step="0.1" min="0" />
+                                                    <span
+                                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2">
+                                            <div class="flex items-center gap-3">
+                                                <span
+                                                    class="material-symbols-outlined text-slate-400">local_shipping</span>
+                                                <div>
+                                                    <p data-i18n="freeShippingTitle"
+                                                        class="text-sm font-semibold text-slate-900 dark:text-white">
+                                                        Free
+                                                        International Shipping</p>
+                                                    <p data-i18n="freeShippingSub" class="text-xs text-slate-500">Enable
+                                                        if shipping is covered by
+                                                        the seller</p>
+                                                </div>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input id="freeShippingToggle" onchange="calculate()"
+                                                    class="sr-only peer" type="checkbox" checked />
+                                                <div
+                                                    class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary">
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="pt-4">
+                                            <button onclick="saveToHistory()"
+                                                class="w-full bg-primary hover:brightness-110 text-background-dark font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20">
+                                                <span class="material-symbols-outlined">save</span>
+                                                <span data-i18n="saveToLibrary">Save to Library</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Results -->
+                            <div class="lg:col-span-5 space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-primary/10 border border-primary/30 rounded-2xl p-5">
+                                        <p data-i18n="netProfit"
+                                            class="text-xs font-bold text-primary uppercase tracking-wider">Net Profit
+                                        </p>
+                                        <h4 id="res-netProfitUSD"
+                                            class="text-2xl font-black mt-1 text-slate-900 dark:text-white">$0.00</h4>
+                                        <p id="res-netProfitJOD"
+                                            class="text-sm text-slate-500 dark:text-slate-400 mt-1">≈ 0.00 JOD</p>
+                                    </div>
+                                    <div id="roi-card"
+                                        class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-primary/10 rounded-2xl p-5 transition-all">
+                                        <p data-i18n="roiPct"
+                                            class="text-xs font-bold text-slate-500 uppercase tracking-wider">ROI %</p>
+                                        <h4 id="res-roi" class="text-2xl font-black mt-1 text-primary">0.0%</h4>
+                                        <p id="roi-label" data-i18n="roiLabel"
+                                            class="text-sm text-slate-500 dark:text-slate-400 mt-1">Return
+                                            on Investment</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-primary/10 shadow-sm flex flex-col items-center">
+                                    <h3 class="text-lg font-bold mb-8 w-full text-left flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary">pie_chart</span>
+                                        <span data-i18n="feeBreakdown">Fee Breakdown</span>
+                                    </h3>
+                                    <div class="relative size-48">
+                                        <canvas id="breakdownChart"></canvas>
+                                        <div
+                                            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                            <p data-i18n="totalInv"
+                                                class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                                                Total Inv.</p>
+                                            <p id="res-totalInv"
+                                                class="text-xl font-black text-slate-900 dark:text-white">$0.00</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-full mt-8 grid grid-cols-2 gap-y-4 gap-x-8">
+                                        <div class="flex items-center gap-2">
+                                            <div class="size-2 rounded-full bg-slate-500"></div>
+                                            <span data-i18n="itemCost" class="text-xs text-slate-500">Item Cost</span>
+                                            <span id="label-itemCost"
+                                                class="text-xs font-bold ml-auto text-slate-900 dark:text-white">$0.00</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="size-2 rounded-full bg-primary font-bold"></div>
+                                            <span data-i18n="ebayFeeFixed" class="text-xs text-slate-500">eBay
+                                                Fee</span>
+                                            <span id="label-ebayFee"
+                                                class="text-xs font-bold ml-auto text-slate-900 dark:text-white">$0.00</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="size-2 rounded-full bg-primary/40 font-bold"></div>
+                                            <span data-i18n="netProfit" class="text-xs text-slate-500">Profit</span>
+                                            <span id="label-profit"
+                                                class="text-xs font-bold ml-auto text-slate-900 dark:text-white">$0.00</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="size-2 rounded-full bg-slate-300 font-bold"></div>
+                                            <span data-i18n="adFeePct" class="text-xs text-slate-500">Ad Fee</span>
+                                            <span id="label-adFee"
+                                                class="text-xs font-bold ml-auto text-slate-900 dark:text-white">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Pro Tip -->
+                                <div id="pro-tip-card"
+                                    class="bg-gradient-to-br from-primary to-emerald-500 rounded-2xl p-6 text-background-dark relative overflow-hidden group">
+                                    <button onclick="dismissProTip()"
+                                        class="absolute top-4 right-4 z-10 p-1 rounded-full hover:bg-black/10 transition-colors">
+                                        <span class="material-symbols-outlined text-sm no-flip">close</span>
+                                    </button>
+                                    <span
+                                        class="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl opacity-20 transition-transform group-hover:scale-110">lightbulb</span>
+                                    <h4 data-i18n="proTipTitle" class="font-black text-lg mb-2">Pro Tip</h4>
+                                    <p data-i18n="proTipText" class="text-sm font-medium opacity-90 leading-relaxed">
+                                        Keeping an ROI above 30% ensures business sustainability. Use the "Shipping
+                                        Rates" tab to accurately verify costs before listing.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Rates Tab -->
+                    <div id="tab-shipping" class="tab-content">
+                        <div class="flex flex-col gap-2 mb-8 text-center md:text-left">
+                            <div
+                                class="flex items-center justify-center md:justify-start gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
+                                <span data-i18n="shipmentCenter">Shipment Center</span>
+                                <span class="material-symbols-outlined text-xs">chevron_right</span>
+                                <span data-i18n="rateRef" class="text-slate-900 dark:text-white">Rate Reference</span>
+                            </div>
+                            <h1 data-i18n="internalShipTitle"
+                                class="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">
+                                Internal Shipping Rate Reference</h1>
+                            <p data-i18n="internalShipSub"
+                                class="text-slate-600 dark:text-slate-400 text-base max-w-xl mx-auto md:mx-0">
+                                Predefined JOD values for weight-based shipping calculation. These rates are
+                                automatically synced with the eBay profit engine.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                            <div
+                                class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                                <div
+                                    class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                                </div>
+                                <div>
+                                    <p data-i18n="serviceMode"
+                                        class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                        Service Mode</p>
+                                    <p class="text-slate-900 dark:text-white font-bold text-lg">Standard Int'l</p>
+                                </div>
+                            </div>
+                            <div
+                                class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                                <div
+                                    class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-2xl">payments</span>
+                                </div>
+                                <div>
+                                    <p data-i18n="defaultCurrency"
+                                        class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                        Default Currency</p>
+                                    <p class="text-slate-900 dark:text-white font-bold text-lg">JOD (Fixed)</p>
+                                </div>
+                            </div>
+                            <div
+                                class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                                <div
+                                    class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-2xl">update</span>
+                                </div>
+                                <div>
+                                    <p data-i18n="syncStatus"
+                                        class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                        Sync Status</p>
+                                    <p class="text-slate-900 dark:text-white font-bold text-lg">Active Now</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                        <th data-i18n="weightRange"
+                                            class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            Weight Range</th>
+                                        <th data-i18n="baseCostJOD"
+                                            class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            Base Cost (JOD)</th>
+                                        <th data-i18n="status"
+                                            class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">
+                                            Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">1 - 50g</td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">2.00
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">51 - 100g</td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">2.60
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">101 - 250g</td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">4.65
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">251 - 500g</td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">9.30
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">501g - 1kg</td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">18.00
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">1kg - 1.5kg
+                                        </td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">22.00
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-primary/5 transition-colors">
+                                        <td class="px-6 py-5 font-medium text-slate-900 dark:text-white">1.5kg - 2kg
+                                        </td>
+                                        <td class="px-6 py-5"><span
+                                                class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-primary font-bold text-sm">28.00
+                                                JOD</span></td>
+                                        <td class="px-6 py-5 text-right"><span
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary uppercase">Active</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Saved Products Tab -->
+                    <div id="tab-saved" class="tab-content">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div>
+                                <h2 data-i18n="savedProducts"
+                                    class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Saved
+                                    Products</h2>
+                                <p data-i18n="noSaved" class="text-slate-500 dark:text-slate-400 mt-1">Stored
+                                    calculations and history
+                                    library.</p>
+                            </div>
+                            <button onclick="clearHistory()"
+                                class="bg-rose-500 hover:bg-rose-600 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-rose-500/20">
+                                <span class="material-symbols-outlined">delete_sweep</span>
+                                <span data-i18n="clearLibrary">Clear Library</span>
+                            </button>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-primary/10 overflow-hidden shadow-sm">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead
+                                        class="bg-slate-50 dark:bg-background-dark/30 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <tr>
+                                            <th data-i18n="productName" class="px-6 py-4">Product Name</th>
+                                            <th data-i18n="itemCost" class="px-6 py-4 text-center">Cost</th>
+                                            <th data-i18n="sellingPriceUSD" class="px-6 py-4 text-center">Price</th>
+                                            <th data-i18n="netProfit" class="px-6 py-4 text-center">Profit</th>
+                                            <th data-i18n="roiPct" class="px-6 py-4 text-center">ROI</th>
+                                            <th data-i18n="actions" class="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody"
+                                        class="divide-y divide-slate-100 dark:divide-primary/5 text-sm">
+                                        <!-- History rows will be injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="no-saved-state" class="py-20 text-center space-y-4">
+                                <span
+                                    class="material-symbols-outlined text-slate-300 dark:text-slate-700 text-6xl">folder_off</span>
+                                <p data-i18n="noSaved" class="text-slate-500 font-medium">No saved calculations yet.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Constants ---
+        const CONVERSION_RATE = 0.71; // 1 USD = 0.71 JOD
+        const EBAY_FEE_PCT = 0.20; // 20%
+        const SHIPPING_RATES = [
+            { max: 50, price: 2.00 },
+            { max: 100, price: 2.60 },
+            { max: 250, price: 4.65 },
+            { max: 500, price: 9.30 },
+            { max: 1000, price: 18.00 },
+            { max: 1500, price: 22.00 },
+            { max: 2000, price: 28.00 }
+        ];
+
+        // --- State ---
+        let state = {
+            currencies: { cost: 'USD' },
+            units: { weight: 'G' },
+            chart: null
+        };
+
+        // --- Core Logic ---
+        function init() {
+            initChart();
+            loadHistory();
+            calculate();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Update nav buttons
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                b.classList.add('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-primary/5');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-primary/5');
+            activeBtn.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+
+            // Update breadcrumb
+            const titles = { calculator: 'Profit Calculator', shipping: 'Shipping Rates', saved: 'Saved Products' };
+            document.getElementById('breadcrumb').textContent = titles[tabId];
+        }
+
+        function toggleTheme() {
+            const h = document.documentElement;
+            h.classList.contains('dark') ? h.classList.remove('dark') : h.classList.add('dark');
+        }
+
+        function setCurrency(target, cur) {
+            state.currencies[target] = cur;
+            const usdBtn = document.getElementById(`${target}-USD`);
+            const jodBtn = document.getElementById(`${target}-JOD`);
+            const symbol = document.getElementById(`${target}-symbol`);
+
+            if (cur === 'USD') {
+                usdBtn.classList.add('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                jodBtn.classList.remove('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                if (symbol) symbol.textContent = '$';
+                // Reset padding for $
+                document.getElementById('itemCost').classList.remove('pl-12');
+                document.getElementById('itemCost').classList.add('pl-8');
+            } else {
+                jodBtn.classList.add('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                usdBtn.classList.remove('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                if (symbol) symbol.textContent = 'JD';
+                // Increase padding for JD to prevent overlap
+                document.getElementById('itemCost').classList.remove('pl-8');
+                document.getElementById('itemCost').classList.add('pl-12');
+            }
+            calculate();
+        }
+
+        function setUnit(target, unit) {
+            state.units[target] = unit;
+            const gBtn = document.getElementById(`${target}-G`);
+            const kgBtn = document.getElementById(`${target}-KG`);
+            if (unit === 'G') {
+                gBtn.classList.add('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                kgBtn.classList.remove('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+            } else {
+                kgBtn.classList.add('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+                gBtn.classList.remove('bg-white', 'dark:bg-primary', 'text-slate-900', 'dark:text-background-dark');
+            }
+            calculate();
+        }
+
+        function calculate() {
+            const costInput = parseFloat(document.getElementById('itemCost').value) || 0;
+            const priceUSD = parseFloat(document.getElementById('sellingPrice').value) || 0;
+            const weightInput = parseFloat(document.getElementById('itemWeight').value) || 0;
+            const qty = parseInt(document.getElementById('quantity').value) || 1;
+            const adPct = parseFloat(document.getElementById('adFeePct').value) || 0;
+            const freeShipping = document.getElementById('freeShippingToggle').checked;
+
+            // Normalize Cost to USD
+            const itemCostUSD = state.currencies.cost === 'JOD' ? costInput / CONVERSION_RATE : costInput;
+            const totalItemCostUSD = itemCostUSD * qty;
+
+            // Weight Normalize to Grams
+            const weightG = state.units.weight === 'KG' ? weightInput * 1000 : weightInput;
+
+            // Shipping Engine
+            let shipCostJOD = 0;
+            if (freeShipping) {
+                const entry = SHIPPING_RATES.find(r => weightG <= r.max);
+                shipCostJOD = entry ? entry.price : (weightG > 0 ? SHIPPING_RATES[SHIPPING_RATES.length - 1].price : 0);
+            }
+            const shippingCostUSD = (shipCostJOD / CONVERSION_RATE) * qty;
+
+            // Fees
+            const ebayFeeUSD = priceUSD * EBAY_FEE_PCT * qty;
+            const adFeeUSD = priceUSD * (adPct / 100) * qty;
+            const totalFees = ebayFeeUSD + adFeeUSD;
+
+            // Aggregates
+            const totalRevenue = priceUSD * qty;
+            const totalInvestment = totalItemCostUSD + shippingCostUSD;
+            const netProfitUSD = totalRevenue - totalInvestment - totalFees;
+            const netProfitJOD = netProfitUSD * CONVERSION_RATE;
+            const roi = totalInvestment > 0 ? (netProfitUSD / totalInvestment) * 100 : 0;
+
+            // Update UI
+            document.getElementById('res-netProfitUSD').textContent = `$${netProfitUSD.toFixed(2)}`;
+            document.getElementById('res-netProfitJOD').textContent = `≈ ${netProfitJOD.toFixed(2)} JOD`;
+            document.getElementById('res-roi').textContent = `${roi.toFixed(1)}%`;
+            document.getElementById('res-totalInv').textContent = `$${totalInvestment.toFixed(2)}`;
+
+            document.getElementById('label-itemCost').textContent = `$${totalItemCostUSD.toFixed(2)}`;
+            document.getElementById('label-ebayFee').textContent = `$${ebayFeeUSD.toFixed(2)}`;
+            document.getElementById('label-profit').textContent = `$${Math.max(0, netProfitUSD).toFixed(2)}`;
+            document.getElementById('label-adFee').textContent = `$${adFeeUSD.toFixed(2)}`;
+
+            // ROI Highlighting
+            const roiCard = document.getElementById('roi-card');
+            if (roi > 100) {
+                roiCard.classList.add('roi-warning', 'border-primary/50');
+                document.getElementById('roi-label').textContent = 'EXCELLENT ROI! 🔥';
+            } else {
+                roiCard.classList.remove('roi-warning', 'border-primary/50');
+                document.getElementById('roi-label').textContent = 'Return on Investment';
+            }
+
+            updateChartData(totalItemCostUSD, shippingCostUSD, totalFees, Math.max(0, netProfitUSD));
+        }
+
+        // --- Chart ---
+        function initChart() {
+            const ctx = document.getElementById('breakdownChart').getContext('2d');
+            state.chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Item Cost', 'Shipping', 'Fees', 'Profit'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#64748b', '#3b82f6', '#13ec6d', '#13ec6d66'],
+                        borderWidth: 0,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    cutout: '80%',
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateChartData(cost, ship, fees, profit) {
+            if (!state.chart) return;
+            state.chart.data.datasets[0].data = [cost, ship, fees, profit];
+            state.chart.update();
+        }
+
+        // --- LocalStorage ---
+        function saveToHistory() {
+            const name = document.getElementById('productName').value || "Unnamed Product";
+            const entry = {
+                id: Date.now(),
+                name: name,
+                cost: document.getElementById('itemCost').value,
+                costCur: state.currencies.cost,
+                price: document.getElementById('sellingPrice').value,
+                weight: document.getElementById('itemWeight').value,
+                weightUnit: state.units.weight,
+                qty: document.getElementById('quantity').value,
+                ad: document.getElementById('adFeePct').value,
+                freeShip: document.getElementById('freeShippingToggle').checked,
+                profitUSD: document.getElementById('res-netProfitUSD').textContent,
+                roi: document.getElementById('res-roi').textContent
+            };
+
+            let history = JSON.parse(localStorage.getItem('ebayHistoryPro') || '[]');
+            history.unshift(entry);
+            localStorage.setItem('ebayHistoryPro', JSON.stringify(history.slice(0, 30)));
+            loadHistory();
+            alert("Product saved to library!");
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('ebayHistoryPro') || '[]');
+            const body = document.getElementById('historyTableBody');
+            const empty = document.getElementById('no-saved-state');
+
+            body.innerHTML = '';
+            if (history.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            history.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 dark:hover:bg-primary/5 transition-colors group';
+                tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <p class="font-bold text-slate-900 dark:text-white">${item.name}</p>
+                    <p class="text-[10px] text-slate-400 font-mono tracking-tight">${new Date(item.id).toLocaleDateString()}</p>
+                </td>
+                <td class="px-6 py-4 text-center">${item.costCur === 'USD' ? '$' : 'JD'}${item.cost}</td>
+                <td class="px-6 py-4 text-center font-semibold">$${item.price}</td>
+                <td class="px-6 py-4 text-center text-primary font-bold">${item.profitUSD}</td>
+                <td class="px-6 py-4 text-center"><span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold">${item.roi}</span></td>
+                <td class="px-6 py-4 text-right flex items-center justify-end gap-2">
+                    <button onclick="applyHistory(${item.id})" class="p-2 rounded hover:bg-primary/20 text-primary transition-all">
+                        <span class="material-symbols-outlined text-sm">refresh</span>
+                    </button>
+                    <button onclick="deleteHistory(${item.id})" class="p-2 rounded hover:bg-rose-500/20 text-rose-500 transition-all">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                </td>
+            `;
+                body.appendChild(tr);
+            });
+        }
+
+        function applyHistory(id) {
+            const history = JSON.parse(localStorage.getItem('ebayHistoryPro') || '[]');
+            const item = history.find(h => h.id === id);
+            if (!item) return;
+
+            document.getElementById('productName').value = item.name;
+            document.getElementById('itemCost').value = item.cost;
+            document.getElementById('sellingPrice').value = item.price;
+            document.getElementById('itemWeight').value = item.weight;
+            document.getElementById('quantity').value = item.qty;
+            document.getElementById('adFeePct').value = item.ad;
+            document.getElementById('freeShippingToggle').checked = item.freeShip;
+
+            setCurrency('cost', item.costCur);
+            setUnit('weight', item.weightUnit);
+            switchTab('calculator');
+        }
+
+        function deleteHistory(id) {
+            let history = JSON.parse(localStorage.getItem('ebayHistoryPro') || '[]');
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('ebayHistoryPro', JSON.stringify(history));
+            loadHistory();
+        }
+
+        function clearHistory() {
+            if (confirm("Wipe entire product library?")) {
+                localStorage.removeItem('ebayHistoryPro');
+                loadHistory();
+            }
+        }
+
+        const translations = {
+            en: {
+                profitPro: "Profit Pro", calculator: "Calculator", shippingRates: "Shipping Rates",
+                savedProducts: "Saved Products", exchangeRate: "Exchange Rate", dashboard: "Dashboard",
+                profitCalculator: "Profit Calculator", mainDashboard: "Main Dashboard",
+                subTitle: "Professional eBay margin and ROI analysis tool.",
+                productDetails: "Product Details", productName: "Product Name", itemCost: "Item Cost",
+                sellingPriceUSD: "Selling Price (USD)", itemWeight: "Item Weight", quantity: "Quantity",
+                ebayFeeFixed: "eBay Fee (Fixed %)", adFeePct: "Ad Fee %", freeShippingTitle: "Free International Shipping",
+                freeShippingSub: "Enable if shipping is covered by the seller", saveToLibrary: "Save to Library",
+                netProfit: "Net Profit", roiPct: "ROI %", feeBreakdown: "Fee Breakdown", totalInv: "Total Inv.",
+                roiLabel: "Return on Investment", excelentROI: "EXCELLENT ROI! 🔥", proTipTitle: "Pro Tip",
+                proTipText: "Keeping an ROI above 30% ensures business sustainability. Use the \"Shipping Rates\" tab to accurately verify costs before listing.",
+                shipmentCenter: "Shipment Center", rateRef: "Rate Reference", internalShipTitle: "Internal Shipping Rate Reference",
+                internalShipSub: "Predefined JOD values for weight-based shipping calculation. These rates are automatically synced with the eBay profit engine.",
+                serviceMode: "Service Mode", defaultCurrency: "Default Currency", syncStatus: "Sync Status",
+                weightRange: "Weight Range", baseCostJOD: "Base Cost (JOD)", status: "Status",
+                clearLibrary: "Clear Library", noSaved: "No saved calculations yet.",
+                deleteConfirm: "Wipe entire product library?", saveSuccess: "Product saved to library!"
+            },
+            ar: {
+                profitPro: "بروفيت برو", calculator: "الحاسبة", shippingRates: "أسعار الشحن",
+                savedProducts: "المنتجات المحفوظة", exchangeRate: "سعر الصرف", dashboard: "لوحة التحكم",
+                profitCalculator: "حاسبة الأرباح", mainDashboard: "لوحة التحكم الرئيسية",
+                subTitle: "أداة احترافية لتحليل هامش الربح وعائد الاستثمار في إيباي.",
+                productDetails: "تفاصيل المنتج", productName: "اسم المنتج", itemCost: "تكلفة المنتج",
+                sellingPriceUSD: "سعر البيع (دولار)", itemWeight: "وزن المنتج", quantity: "الكمية",
+                ebayFeeFixed: "رسوم إيباي (ثابتة %)", adFeePct: "نسبة الإعلان %", freeShippingTitle: "شحن دولي مجاني",
+                freeShippingSub: "تفعيل إذا كان البائع يتحمل تكاليف الشحن", saveToLibrary: "حفظ في المكتبة",
+                netProfit: "صافي الربح", roiPct: "عائد الاستثمار %", feeBreakdown: "تفصيل الرسوم", totalInv: "إجمالي الاستثمار",
+                roiLabel: "العائد على الاستثمار", excelentROI: "عائد استثمار ممتاز! 🔥", proTipTitle: "نصيحة احترافية",
+                proTipText: "الحفاظ على عائد استثمار فوق 30% يضمن استدامة العمل. استخدم تبويب \"أسعار الشحن\" للتحقق بدقة من التكاليف قبل الإدراج.",
+                shipmentCenter: "مركز الشحن", rateRef: "مرجع الأسعار", internalShipTitle: "مرجع أسعار الشحن الداخلي",
+                internalShipSub: "قيم دينار أردني محددة مسبقاً لحساب الشحن بناءً على الوزن. هذه الأسعار متزامنة تلقائياً مع محرك أرباح إيباي.",
+                serviceMode: "وضع الخدمة", defaultCurrency: "العملة الافتراضية", syncStatus: "حالة المزامنة",
+                weightRange: "نطاق الوزن", baseCostJOD: "التكلفة الأساسية (د.أ)", status: "الحالة",
+                clearLibrary: "مسح المكتبة", noSaved: "لا توجد حسابات محفوظة بعد.",
+                deleteConfirm: "هل تريد مسح مكتبة المنتجات بالكامل؟", saveSuccess: "تم حفظ المنتج في المكتبة!"
+            }
+        };
+
+        function setLanguage(lang) {
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+            // Update buttons
+            document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+            document.getElementById('lang-en').classList.toggle('text-slate-500', lang !== 'en');
+            document.getElementById('lang-ar').classList.toggle('active', lang === 'ar');
+            document.getElementById('lang-ar').classList.toggle('text-slate-500', lang !== 'ar');
+
+            // Translate elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            // Update placeholders
+            const placeholders = {
+                en: { productName: "e.g. Wireless Noise Cancelling Headphones", adFee: "0" },
+                ar: { productName: "مثل: سماعات لاسلكية عازلة للضوضاء", adFee: "0" }
+            };
+            document.getElementById('productName').placeholder = placeholders[lang].productName;
+            document.getElementById('adFeePct').placeholder = placeholders[lang].adFee;
+
+            calculate();
+        }
+
+        function dismissProTip() {
+            document.getElementById('pro-tip-card').style.display = 'none';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
